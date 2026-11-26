@@ -2,7 +2,7 @@
 function doGet() {
   const book = SpreadsheetApp.getActiveSpreadsheet();
   const rows = {};
-  ['Cards', 'Programs', 'Schedule', 'Settings'].forEach((name) => {
+  ['Cards', 'Fixed', 'Cycle 1', 'Settings'].forEach((name) => {
     const sheet = book.getSheetByName(name);
     rows[name] = sheet ? Math.max(sheet.getLastRow() - 1, 0) : null;
   });

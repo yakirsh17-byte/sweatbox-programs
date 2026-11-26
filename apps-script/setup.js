@@ -1,28 +1,53 @@
 /** Creates the SweatBox tabs. Run setupSheet once from the Apps Script editor. */
-const CARD_IDS = ['PUSH', 'PULL', 'LEGS', 'GLUTES', 'A1', 'A2', 'B1', 'B2', 'C1', 'ABS'];
-
 const CARDS = [
-  // card_id, title, color, screen, order, tall, auto_red, fixed_program
-  ['PUSH', 'PUSH · חזה, כתפיים, יד אחורית', '#46b06a', 1, 1, 'no', 'yes', ''],
-  ['PULL', 'PULL · גב, יד קדמית', '#c4475a', 1, 2, 'no', 'yes', ''],
-  ['PROTOCOL', 'פרוטוקול למתאמן המתחיל', '#f2c233', 1, 3, 'yes', 'no', 'PROTOCOL-1'],
-  ['LEGS', 'LEGS · שרשרת קדמית ואחורית', '#4c7dff', 1, 4, 'no', 'yes', ''],
-  ['GLUTES', 'GLUTES & ABS', '#e05bd0', 1, 5, 'no', 'yes', ''],
-  ['A1', 'A1 · FULL BODY · דגש פלג גוף תחתון', '#4c7dff', 2, 1, 'no', 'yes', ''],
-  ['A2', 'A2 · LOWER BODY · דגש ישבן', '#e05bd0', 2, 2, 'no', 'yes', ''],
-  ['B2', 'B2 · UPPER BODY', '#ff8a3d', 2, 3, 'no', 'yes', ''],
-  ['B1', 'B1 · FULL BODY · דגש פלג גוף עליון', '#46b06a', 2, 4, 'no', 'yes', ''],
-  ['C1', 'C1 · FULL BODY · כללי', '#9b6bff', 2, 5, 'no', 'yes', ''],
-  ['ABS', 'תכנית בטן שבועית', '#e8e8ee', 2, 6, 'no', 'yes', ''],
+  // card_id, title, color, screen, order, tall, auto_red, fixed
+  ['PUSH', 'PUSH · חזה, כתפיים, יד אחורית', '#46b06a', 1, 1, 'no', 'yes', 'no'],
+  ['PULL', 'PULL · גב, יד קדמית', '#c4475a', 1, 2, 'no', 'yes', 'no'],
+  ['PROTOCOL', 'פרוטוקול למתאמן המתחיל', '#f2c233', 1, 3, 'yes', 'no', 'yes'],
+  ['LEGS', 'LEGS · שרשרת קדמית ואחורית', '#4c7dff', 1, 4, 'no', 'yes', 'no'],
+  ['GLUTES', 'GLUTES & ABS', '#e05bd0', 1, 5, 'no', 'yes', 'no'],
+  ['A1', 'A1 · FULL BODY · דגש פלג גוף תחתון', '#4c7dff', 2, 1, 'no', 'yes', 'no'],
+  ['A2', 'A2 · LOWER BODY · דגש ישבן', '#e05bd0', 2, 2, 'no', 'yes', 'no'],
+  ['B2', 'B2 · UPPER BODY', '#ff8a3d', 2, 3, 'no', 'yes', 'no'],
+  ['B1', 'B1 · FULL BODY · דגש פלג גוף עליון', '#46b06a', 2, 4, 'no', 'yes', 'no'],
+  ['C1', 'C1 · FULL BODY · כללי', '#9b6bff', 2, 5, 'no', 'yes', 'no'],
+  ['ABS', 'תכנית בטן שבועית', '#e8e8ee', 2, 6, 'no', 'yes', 'no'],
 ];
 
+const EXERCISE_COLUMNS = ['section', 'exercise', 'sets', 'reps', 'superset', 'highlight', 'red'];
+const CYCLE_HEADER = ['week', 'card', ...EXERCISE_COLUMNS];
+
 const TABS = {
-  Cards: [['card_id', 'title', 'color', 'screen', 'order', 'tall', 'auto_red', 'fixed_program'], ...CARDS],
-  Programs: [['program_id', 'section', 'exercise', 'sets', 'reps', 'superset', 'highlight', 'red']],
-  Schedule: [['starts_on', 'week', ...CARD_IDS]],
+  Cards: [['card_id', 'title', 'color', 'screen', 'order', 'tall', 'auto_red', 'fixed'], ...CARDS],
+  Fixed: [['card', ...EXERCISE_COLUMNS]],
+  'Cycle 1': [CYCLE_HEADER],
   Settings: [['key', 'value'], ['brand', 'SWEATBOX'], ['screen_1_label', 'SPLIT PROGRAM'],
-    ['screen_2_label', 'FULL BODY PROGRAMS'], ['cycle_length', 4]],
+    ['screen_2_label', 'FULL BODY PROGRAMS'],
+    // Sunday on which week 1 of Cycle 1 began. Weeks are counted continuously from here.
+    ['cycle_1_starts', '2026-11-01']],
 };
+
+function onOpen() {
+  SpreadsheetApp.getUi().createMenu('SweatBox').addItem('New cycle', 'newCycle').addToUi();
+}
+
+/** Highest N among the tabs named "Cycle N". */
+function lastCycleNumber(book) {
+  const numbers = book.getSheets()
+    .map((sheet) => /^Cycle (\d+)$/.exec(sheet.getName()))
+    .filter(Boolean)
+    .map((match) => Number(match[1]));
+  return Math.max(0, ...numbers);
+}
+
+/** Copies the latest cycle tab, with its formatting, under the next number. */
+function newCycle() {
+  const book = SpreadsheetApp.getActiveSpreadsheet();
+  const last = lastCycleNumber(book);
+  if (!last) throw new Error('No cycle tab to copy. Run setupSheet first.');
+  const copy = book.getSheetByName('Cycle ' + last).copyTo(book).setName('Cycle ' + (last + 1));
+  book.setActiveSheet(copy);
+}
 
 function setupSheet() {
   const book = SpreadsheetApp.getActiveSpreadsheet();
@@ -32,18 +57,17 @@ function setupSheet() {
 
   Object.entries(TABS).forEach(([name, rows]) => {
     const sheet = book.insertSheet(name);
-    // Plain text, so that 8-12 or 01:00 are not turned into dates or times.
-    if (name === 'Programs') sheet.getRange('A:H').setNumberFormat('@');
+    // Plain text, so that 8-12, 01:00 or the start date stay exactly as typed.
+    if (name !== 'Cards') sheet.getRange('A:I').setNumberFormat('@');
     sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
     sheet.getRange(1, 1, 1, rows[0].length).setFontWeight('bold');
     sheet.setFrozenRows(1);
   });
 
-  const schedule = book.getSheetByName('Schedule');
-  schedule.getRange('A2:A').setNumberFormat('dd/mm/yyyy');
-  const rule = SpreadsheetApp.newDataValidation()
-    .requireValueInRange(book.getSheetByName('Programs').getRange('A2:A'), true)
-    .setAllowInvalid(false)
-    .build();
-  schedule.getRange(2, 3, schedule.getMaxRows() - 1, CARD_IDS.length).setDataValidation(rule);
+  const cycle = book.getSheetByName('Cycle 1');
+  const dropdown = (column, values) => cycle.getRange(2, column, cycle.getMaxRows() - 1, 1)
+    .setDataValidation(SpreadsheetApp.newDataValidation()
+      .requireValueInList(values, true).setAllowInvalid(false).build());
+  dropdown(1, ['1', '2', '3', '4']);
+  dropdown(2, CARDS.filter((card) => card[7] === 'no').map((card) => card[0]));
 }
