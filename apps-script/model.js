@@ -26,6 +26,18 @@ function toRecords(values) {
   });
 }
 
+const MONTHS = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/i;
+
+/** True when reps look like a date or time that the sheet made from text such as 8-12 or 01:00. */
+function looksLikeDate(reps) {
+  return /(^|\D)(19|20)\d{2}($|\D)/.test(reps) && /[./-]/.test(reps) ||
+    /\d/.test(reps) && MONTHS.test(reps) ||
+    /^\d{1,2}:\d{2}:\d{2}( ?[ap]m)?$/i.test(reps);
+}
+
+/** Card ids match whatever their capital letters, so push and PUSH are the same card. */
+const sameCard = (a, b) => a.toUpperCase() === b.toUpperCase();
+
 const hasContent = (row) => Boolean(row.exercise || row.highlight || row.sets || row.reps);
 
 /** Highest "Cycle N" with content, N not later than the cycle that is due. */
@@ -63,7 +75,12 @@ function buildSections(rows, autoRed, where, errors) {
     };
     if (row.superset && previous && previous.letter === row.superset) {
       const group = section.groups[section.groups.length - 1];
-      if (row.sets && row.sets !== group.sets) errors.push(`${at}: superset ${row.superset} has different sets`);
+      if (row.sets && !group.sets) {
+        errors.push(`${at}: superset ${row.superset} has empty sets on its first row (row ${previous.firstLine}); ` +
+          'put the sets there');
+      } else if (row.sets && row.sets !== group.sets) {
+        errors.push(`${at}: superset ${row.superset} has different sets`);
+      }
       group.rows.push(item);
     } else {
       section.groups.push({
@@ -73,7 +90,8 @@ function buildSections(rows, autoRed, where, errors) {
         rows: [item],
       });
     }
-    previous = { letter: row.superset };
+    const continues = row.superset && previous && previous.letter === row.superset;
+    previous = { letter: row.superset, firstLine: continues ? previous.firstLine : row.line };
   });
   return sections;
 }
@@ -87,7 +105,14 @@ function buildBoard(tabs, dateIso) {
   const settings = {};
   toRecords(tabs.Settings).forEach((r) => { settings[r.key] = r.value; });
   const start = settings.cycle_1_starts || '';
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(start)) return fail('Settings: cycle_1_starts must look like 2026-11-01');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || new Date(toUtc(start)).toISOString().slice(0, 10) !== start) {
+    return fail('Settings: cycle_1_starts must be a real date that looks like 2026-11-01');
+  }
+  const weekday = new Date(toUtc(start)).getUTCDay();
+  if (weekday !== 0) {
+    const day = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][weekday];
+    return fail(`Settings: cycle_1_starts must be a Sunday, but ${start} is a ${day}`);
+  }
   const position = weekPosition(start, dateIso);
   if (!position) return fail(`No programs before ${start}`);
   const cycle = pickCycle(tabs, position.cycleDue);
@@ -96,6 +121,11 @@ function buildBoard(tabs, dateIso) {
   const errors = [];
   const warnings = [];
   const cards = toRecords(tabs.Cards).filter((c) => c.card_id);
+  cards.forEach((card, i) => {
+    if (cards.slice(0, i).some((other) => sameCard(other.card_id, card.card_id))) {
+      warnings.push(`Cards row ${card.line}: card "${card.card_id}" is listed twice`);
+    }
+  });
   const isFixed = (card) => card.fixed === 'yes';
   const tabName = 'Cycle ' + cycle;
   const weekly = toRecords(tabs[tabName]).filter(hasContent);
@@ -107,21 +137,28 @@ function buildBoard(tabs, dateIso) {
   weekly.forEach((row) => {
     const problems = thisWeek.includes(row) ? errors : warnings;
     if (!['1', '2', '3', '4'].includes(row.week)) problems.push(`${tabName} row ${row.line}: week must be 1-4`);
-    if (!cards.some((c) => c.card_id === row.card && !isFixed(c))) {
+    if (!cards.some((c) => sameCard(c.card_id, row.card) && !isFixed(c))) {
       problems.push(`${tabName} row ${row.line}: unknown card "${row.card}"`);
     }
   });
   fixed.forEach((row) => {
-    if (!cards.some((c) => c.card_id === row.card && isFixed(c))) {
+    if (!cards.some((c) => sameCard(c.card_id, row.card) && isFixed(c))) {
       warnings.push(`Fixed row ${row.line}: unknown card "${row.card}"`);
     }
   });
+
+  [[tabName, weekly], ['Fixed', fixed]].forEach(([where, rows]) => rows.forEach((row) => {
+    if (looksLikeDate(row.reps)) {
+      warnings.push(`${where} row ${row.line}: reps "${row.reps}" look like a date or time made by the sheet. ` +
+        'Retype them, and paste with Ctrl+Shift+V');
+    }
+  }));
 
   if (!thisWeek.length) errors.push(`${tabName} has no rows for week ${position.week}`);
 
   const result = cards.map((card) => {
     const where = isFixed(card) ? 'Fixed' : tabName;
-    const rows = (isFixed(card) ? fixed : thisWeek).filter((row) => row.card === card.card_id);
+    const rows = (isFixed(card) ? fixed : thisWeek).filter((row) => sameCard(row.card, card.card_id));
     if (!rows.length) warnings.push(`${card.card_id} has no rows`);
     if (!isFixed(card) && rows.length > MAX_ROWS) warnings.push(`${card.card_id} has ${rows.length} rows; text will shrink`);
     return {
@@ -148,4 +185,4 @@ function buildBoard(tabs, dateIso) {
   };
 }
 
-if (typeof module !== 'undefined') module.exports = { weekPosition, buildBoard };
+if (typeof module !== 'undefined') module.exports = { weekPosition, buildBoard, looksLikeDate };

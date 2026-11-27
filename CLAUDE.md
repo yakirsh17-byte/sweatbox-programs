@@ -29,13 +29,10 @@ Two studio TV screens showing the week's workout programs for SweatBox, a gym in
 ## Status, 27 November 2026
 - Live on GitHub Pages: https://yakirsh17-byte.github.io/sweatbox-programs/
 - Apps Script: connection proven. The owner must deploy script version 2 (api, model, menu changed); until then the screens show "Apps Script is out of date".
+- Script version 3 (all four files changed: issues 5, 6, 7, 8 and 9) is ready in the code but not yet pasted by the owner; after pasting, the owner runs `updateCardLists` once to approve the narrower access. Push it to `main` only after the owner has published it, or the screens show a version note.
 - Deadline: Sunday 29/11/2026 is Cycle 2 week 1; the owner must create `Cycle 2` (SweatBox > New cycle) and enter week 1.
 - Not done: custom domain `programs.sweatboxstudio.co.il` (CNAME to `yakirsh17-byte.github.io`), testing `kiosk/start-boards.bat` on the Windows studio PC, proofreading the seeded week 4.
 
 ## Open issues from the 27/11 review
-5. Pasting can turn reps like `8-12` into dates that pass checks: warn when reps look like a date.
-6. `cycle_1_starts` is not checked to be a Sunday.
-7. Script requests access to all spreadsheets: add `/** @OnlyCurrentDoc */` (owner re-approves once).
-8. New cards need a manual dropdown edit; card ids are case-sensitive.
-9. Blank sets in a superset is reported as "different sets".
+Fixed in script version 3: 5 (reps that look like a date are a warning), 6 (`cycle_1_starts` must be a real Sunday), 7 (`@OnlyCurrentDoc` in `api.js`), 8 (card ids match whatever their capital letters; the card dropdowns on every cycle tab are rebuilt from `Cards` on edit, on New cycle and from SweatBox > Update card lists), 9 (empty sets on a superset's first row has its own message).
 10. `.gitignore` added for seed and export files; still review every commit for program content.

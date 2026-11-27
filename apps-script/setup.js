@@ -42,7 +42,29 @@ function newCycle() {
   const last = lastCycleNumber(book);
   if (!last) throw new Error('No cycle tab to copy. Run setupSheet first.');
   const copy = book.getSheetByName('Cycle ' + last).copyTo(book).setName('Cycle ' + (last + 1));
+  updateCardLists();
   book.setActiveSheet(copy);
+}
+
+/** A dropdown on one column of a tab, from row 2 down. */
+function setDropdown(sheet, column, values) {
+  sheet.getRange(2, column, sheet.getMaxRows() - 1, 1)
+    .setDataValidation(SpreadsheetApp.newDataValidation()
+      .requireValueInList(values, true).setAllowInvalid(false).build());
+}
+
+/** Rebuilds the card dropdown on every cycle tab from the weekly cards in the Cards tab. */
+function updateCardLists() {
+  const book = SpreadsheetApp.getActiveSpreadsheet();
+  const cards = book.getSheetByName('Cards');
+  if (!cards) return;
+  const ids = toRecords(cards.getDataRange().getDisplayValues())
+    .filter((card) => card.card_id && card.fixed !== 'yes')
+    .map((card) => card.card_id);
+  if (!ids.length) return;
+  book.getSheets()
+    .filter((sheet) => /^Cycle \d+$/.test(sheet.getName()))
+    .forEach((sheet) => setDropdown(sheet, 2, ids));
 }
 
 function setupSheet() {
@@ -60,10 +82,6 @@ function setupSheet() {
     sheet.setFrozenRows(1);
   });
 
-  const cycle = book.getSheetByName('Cycle 1');
-  const dropdown = (column, values) => cycle.getRange(2, column, cycle.getMaxRows() - 1, 1)
-    .setDataValidation(SpreadsheetApp.newDataValidation()
-      .requireValueInList(values, true).setAllowInvalid(false).build());
-  dropdown(1, ['1', '2', '3', '4']);
-  dropdown(2, CARDS.filter((card) => card[7] === 'no').map((card) => card[0]));
+  setDropdown(book.getSheetByName('Cycle 1'), 1, ['1', '2', '3', '4']);
+  updateCardLists();
 }

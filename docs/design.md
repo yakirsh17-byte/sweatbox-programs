@@ -146,6 +146,7 @@ Brand name, screen labels and `cycle_1_starts` = `2026-11-01`, the single anchor
 |---|---|---|
 | New cycle | Copies the latest cycle tab, with formatting, as the next number | In the setup script |
 | Check and preview | Lists errors for a date and gives preview links for both screens | Built |
+| Update card lists | Rebuilds the card dropdown on every cycle tab from `Cards` (also happens by itself when `Cards` is edited) | Script v3 |
 
 To reuse an older workout, copy its rows from that cycle's tab.
 
@@ -355,11 +356,11 @@ Fixed: nightly reload, only the week on screen can block updates, script version
 
 | # | Issue | Suggested fix |
 |---|---|---|
-| 5 | Pasting can turn reps such as `8-12` into dates, which pass the checks | Warn when reps look like a date; paste with Ctrl+Shift+V |
-| 6 | `cycle_1_starts` is not checked to be a Sunday | Reject other weekdays |
-| 7 | The script requests access to all the owner's spreadsheets | Add `@OnlyCurrentDoc`; the owner re-approves once |
-| 8 | A new card needs a manual dropdown edit; card ids are case-sensitive | Build the dropdown from `Cards`; compare ids case-insensitively |
-| 9 | A blank sets cell in a superset is reported as "different sets" | Specific message |
+| 5 | Pasting can turn reps such as `8-12` into dates, which pass the checks | Done (script v3): Check and preview warns when reps look like a date or time; paste with Ctrl+Shift+V |
+| 6 | `cycle_1_starts` is not checked to be a Sunday | Done (script v3): other weekdays and impossible dates are rejected |
+| 7 | The script requests access to all the owner's spreadsheets | Done (script v3): `@OnlyCurrentDoc`; the owner re-approves once |
+| 8 | A new card needs a manual dropdown edit; card ids are case-sensitive | Done (script v3): dropdowns rebuild from `Cards` on edit, on New cycle and from Update card lists; ids ignore capital letters |
+| 9 | A blank sets cell in a superset is reported as "different sets" | Done (script v3): the message names the empty first row |
 | 10 | Nothing stopped private data being committed | Done: `.gitignore` for seed and export files |
 
 Also open: custom domain, studio PC test, proofreading the seeded week 4, legibility from the training floor.

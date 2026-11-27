@@ -7,7 +7,7 @@ const vm = require('vm');
 // Minimal in-memory stand-in for the Google services the scripts use.
 function fakeGoogle() {
   const tabs = {};
-  const sheet = (name, cells = []) => {
+  const sheet = (name, cells = [], dropdowns = {}) => {
     const range = (row, col) => {
       const r = {
         setValues(values) {
@@ -17,16 +17,19 @@ function fakeGoogle() {
           });
           return r;
         },
-        setNumberFormat: () => r, setFontWeight: () => r, setDataValidation: () => r,
+        setNumberFormat: () => r, setFontWeight: () => r,
+        setDataValidation(rule) { dropdowns[col] = rule.values; return r; },
+        getSheet: () => tabs[name],
       };
       return r;
     };
     return {
       cells,
+      dropdowns,
       getName: () => name,
       copyTo: () => {
-        const copy = sheet(name + ' copy', cells.map((line) => [...line]));
-        copy.setName = (to) => { tabs[to] = sheet(to, copy.cells); return tabs[to]; };
+        const copy = sheet(name + ' copy', cells.map((line) => [...line]), { ...dropdowns });
+        copy.setName = (to) => { tabs[to] = sheet(to, copy.cells, copy.dropdowns); return tabs[to]; };
         return copy;
       },
       getRange: (a, b) => (typeof a === 'string' ? range(1, 1) : range(a, b)),
@@ -35,7 +38,11 @@ function fakeGoogle() {
       getMaxRows: () => 1000, getLastRow: () => cells.length,
     };
   };
-  const rule = { requireValueInList: () => rule, setAllowInvalid: () => rule, build: () => ({}) };
+  const rule = {
+    requireValueInList: (values) => { rule.values = values; return rule; },
+    setAllowInvalid: () => rule,
+    build: () => ({ values: rule.values }),
+  };
   return {
     tabs,
     SpreadsheetApp: {
@@ -91,4 +98,24 @@ test('new cycle copies the latest cycle tab under the next number', () => {
   app.newCycle();
   assert.deepStrictEqual(Object.keys(google.tabs).filter((n) => n.startsWith('Cycle')),
     ['Cycle 1', 'Cycle 2', 'Cycle 3']);
+});
+
+test('card dropdowns follow the Cards tab, on every cycle tab', () => {
+  const google = fakeGoogle();
+  const app = load(google);
+  app.setupSheet();
+  assert.deepStrictEqual([...google.tabs['Cycle 1'].dropdowns[1]], ['1', '2', '3', '4']);
+  assert.ok(!google.tabs['Cycle 1'].dropdowns[2].includes('PROTOCOL'));
+  app.newCycle();
+  google.tabs.Cards.cells.push(['NEWCARD', 'New', '#fff', '2', '7', 'no', 'yes', 'no']);
+  app.onEdit({ range: google.tabs.Cards.getRange(2, 1) });
+  ['Cycle 1', 'Cycle 2'].forEach((tab) => assert.ok(google.tabs[tab].dropdowns[2].includes('NEWCARD'), tab));
+  google.tabs.Cards.cells.push(['LATER', 'Later', '#fff', '2', '8', 'no', 'yes', 'no']);
+  app.onEdit({ range: google.tabs['Cycle 1'].getRange(2, 1) });
+  assert.ok(!google.tabs['Cycle 1'].dropdowns[2].includes('LATER'));
+});
+
+test('the script asks for access to this sheet only', () => {
+  const api = fs.readFileSync(path.join(__dirname, '../apps-script/api.js'), 'utf8');
+  assert.match(api, /^\/\*\* @OnlyCurrentDoc \*\//);
 });

@@ -21,6 +21,7 @@ Check the live version by opening the `/exec` address: it shows `"version"`. If 
 - One tab per cycle (`Cycle 1`, `Cycle 2`, ...). Each row has a week (1-4) and a card.
 - Next cycle: **SweatBox > New cycle**, then edit the copy.
 - **SweatBox > Check and preview** lists problems for a date and gives preview links.
+- New card: add a row in `Cards`; the card dropdowns update by themselves (or use **SweatBox > Update card lists**).
 - Only mistakes in the week on screen stop it updating; others appear as warnings.
 - Weeks are counted continuously from `cycle_1_starts` in `Settings`.
 

@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { weekPosition, buildBoard } = require('../apps-script/model.js');
+const { weekPosition, buildBoard, looksLikeDate } = require('../apps-script/model.js');
 
 const HEADER = ['week', 'card', 'section', 'exercise', 'sets', 'reps', 'superset', 'highlight', 'red'];
 const row = (week, exercise, sets, reps, superset = '', red = '') =>
@@ -70,4 +70,39 @@ test('mistakes outside the week on screen do not block it', () => {
 test('an empty week is an error, not a blank board', () => {
   const board = buildBoard(tabs([row('4', 'a', '3', '12')]), '2026-11-29');
   assert.match(board.errors[0], /no rows for week 1/);
+});
+
+test('reps that the sheet turned into a date or time are flagged', () => {
+  ['8/12/2026', '2026-12-08', '8.12.2026', '12-Aug', 'Dec 8', '1:00:00', '1:00:00 AM']
+    .forEach((reps) => assert.ok(looksLikeDate(reps), reps));
+  ['8-12', '12+3', '10,10 MAX', '01:00', '30 sec', '3x10', '2020 m', 'MAX']
+    .forEach((reps) => assert.ok(!looksLikeDate(reps), reps));
+  const board = buildBoard(tabs([row('1', 'a', '3', '8/12/2026'), row('2', 'b', '3', '1:00:00')]), '2026-11-01');
+  assert.strictEqual(board.ok, true);
+  assert.match(board.warnings.join('\n'), /row 2: reps "8\/12\/2026" look like a date/);
+  assert.match(board.warnings.join('\n'), /row 3: reps "1:00:00"/);
+});
+
+test('empty sets on the first superset row get their own message', () => {
+  const board = buildBoard(tabs([row('1', 'a', '', '8', 'A'), row('1', 'b', '4', '10', 'A')]), '2026-11-01');
+  assert.strictEqual(board.ok, false);
+  assert.match(board.errors.join('\n'), /row 3: superset A has empty sets on its first row \(row 2\)/);
+  assert.doesNotMatch(board.errors.join('\n'), /different sets/);
+});
+
+test('card ids match whatever their capital letters', () => {
+  const board = buildBoard(tabs([['1', 'push', '', 'a', '3', '12', '', '', '']]), '2026-11-01');
+  assert.strictEqual(board.ok, true);
+  assert.strictEqual(board.cards[0].sections[0].groups.length, 1);
+  assert.strictEqual(board.cards[0].id, 'PUSH');
+  const twice = tabs([row('1', 'a', '3', '12')]);
+  twice.Cards.push(['Push', 'Again', '#fff', '1', '2', 'no', 'yes', 'no']);
+  assert.match(buildBoard(twice, '2026-11-01').warnings.join('\n'), /Cards row 3: card "Push" is listed twice/);
+});
+
+test('cycle_1_starts must be a real Sunday', () => {
+  const withStart = (start) => tabs([row('1', 'a', '3', '12')], { Settings: [['key', 'value'], ['cycle_1_starts', start]] });
+  assert.match(buildBoard(withStart('2026-11-03'), '2026-11-05').errors[0], /must be a Sunday, but 2026-11-03 is a Tuesday/);
+  assert.match(buildBoard(withStart('2026-02-31'), '2026-11-05').errors[0], /real date/);
+  assert.strictEqual(buildBoard(withStart('2026-11-01'), '2026-11-05').ok, true);
 });

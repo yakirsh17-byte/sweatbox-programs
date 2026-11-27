@@ -5,7 +5,13 @@ function onOpen() {
   SpreadsheetApp.getUi().createMenu('SweatBox')
     .addItem('New cycle', 'newCycle')
     .addItem('Check and preview', 'checkData')
+    .addItem('Update card lists', 'updateCardLists')
     .addToUi();
+}
+
+/** Editing the Cards tab updates the card dropdowns, so a new card needs no manual step. */
+function onEdit(e) {
+  if (e && e.range && e.range.getSheet().getName() === 'Cards') updateCardLists();
 }
 
 /** Reports problems for a date and gives the preview links. */

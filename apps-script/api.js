@@ -1,7 +1,9 @@
+/** @OnlyCurrentDoc */
+
 /** Web app endpoint. GET returns this week's board; ?date=YYYY-MM-DD previews another week. */
 const TIME_ZONE = 'Asia/Jerusalem';
 // Raise this, and EXPECTED_SCRIPT_VERSION in web/config.js, whenever any Apps Script file changes.
-const SCRIPT_VERSION = 2;
+const SCRIPT_VERSION = 3;
 
 function readTabs() {
   const tabs = {};
