@@ -54,7 +54,17 @@ test('mistakes are reported with their row', () => {
     row('7', 'c', '3', '8')]), '2026-11-01');
   assert.strictEqual(board.ok, false);
   assert.match(board.errors.join('\n'), /row 3: superset A has different sets/);
-  assert.match(board.errors.join('\n'), /row 4: week must be 1-4/);
+  assert.match(board.warnings.join('\n'), /row 4: week must be 1-4/);
+});
+
+test('mistakes outside the week on screen do not block it', () => {
+  const unfinished = ['', 'PUSH', '', 'b', '3', '12', '', '', ''];
+  const wrongCard = ['2', 'PUSHH', '', 'c', '3', '12', '', '', ''];
+  const board = buildBoard(tabs([row('1', 'a', '3', '12'), unfinished, wrongCard]), '2026-11-01');
+  assert.strictEqual(board.ok, true);
+  assert.strictEqual(board.warnings.length, 2);
+  const wrongNow = buildBoard(tabs([row('1', 'a', '3', '12'), ['1', 'PUSHH', '', 'c', '3', '12', '', '', '']]), '2026-11-01');
+  assert.strictEqual(wrongNow.ok, false);
 });
 
 test('an empty week is an error, not a blank board', () => {

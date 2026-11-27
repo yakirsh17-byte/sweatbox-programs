@@ -68,6 +68,13 @@ test('setup creates the tabs, and an empty sheet is reported instead of drawn', 
   assert.deepStrictEqual(Object.keys(google.tabs), ['Cards', 'Fixed', 'Cycle 1', 'Settings']);
   const reply = JSON.parse(app.doGet({ parameter: { date: '2026-11-22' } }));
   assert.strictEqual(reply.ok, false);
+  assert.strictEqual(reply.version, vm.runInContext('SCRIPT_VERSION', app));
+});
+
+test('the page expects the version the script reports', () => {
+  const config = fs.readFileSync(path.join(__dirname, '../web/config.js'), 'utf8');
+  const expected = Number(/EXPECTED_SCRIPT_VERSION = (\d+)/.exec(config)[1]);
+  assert.strictEqual(expected, vm.runInContext('SCRIPT_VERSION', load(fakeGoogle())));
 });
 
 test('setup refuses to run twice', () => {

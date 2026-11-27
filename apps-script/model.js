@@ -101,19 +101,22 @@ function buildBoard(tabs, dateIso) {
   const weekly = toRecords(tabs[tabName]).filter(hasContent);
   const fixed = toRecords(tabs.Fixed).filter(hasContent);
 
+  // Only rows that would be on screen can block it. Mistakes elsewhere, such as a
+  // half-typed row for another week, are warnings so live updates keep flowing.
+  const thisWeek = weekly.filter((row) => row.week === String(position.week));
   weekly.forEach((row) => {
-    if (!['1', '2', '3', '4'].includes(row.week)) errors.push(`${tabName} row ${row.line}: week must be 1-4`);
+    const problems = thisWeek.includes(row) ? errors : warnings;
+    if (!['1', '2', '3', '4'].includes(row.week)) problems.push(`${tabName} row ${row.line}: week must be 1-4`);
     if (!cards.some((c) => c.card_id === row.card && !isFixed(c))) {
-      errors.push(`${tabName} row ${row.line}: unknown card "${row.card}"`);
+      problems.push(`${tabName} row ${row.line}: unknown card "${row.card}"`);
     }
   });
   fixed.forEach((row) => {
     if (!cards.some((c) => c.card_id === row.card && isFixed(c))) {
-      errors.push(`Fixed row ${row.line}: unknown card "${row.card}"`);
+      warnings.push(`Fixed row ${row.line}: unknown card "${row.card}"`);
     }
   });
 
-  const thisWeek = weekly.filter((row) => row.week === String(position.week));
   if (!thisWeek.length) errors.push(`${tabName} has no rows for week ${position.week}`);
 
   const result = cards.map((card) => {

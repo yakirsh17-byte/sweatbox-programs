@@ -14,23 +14,27 @@ Studio screens fed by a private Google Sheet.
 6. Put the `/exec` URL in `web/config.js`.
 
 After changing the script: **Deploy > Manage deployments > edit > New version**, so the URL stays the same.
+Check the live version by opening the `/exec` address: it shows `"version"`. If it differs from
+`EXPECTED_SCRIPT_VERSION` in `web/config.js`, the screens show a small amber note in the header.
 
 ## 2. Entering programs
 - One tab per cycle (`Cycle 1`, `Cycle 2`, ...). Each row has a week (1-4) and a card.
 - Next cycle: **SweatBox > New cycle**, then edit the copy.
 - **SweatBox > Check and preview** lists problems for a date and gives preview links.
+- Only mistakes in the week on screen stop it updating; others appear as warnings.
 - Weeks are counted continuously from `cycle_1_starts` in `Settings`.
 
 ## 3. Studio PC (Windows, two 1920x1080 screens)
-1. Set Windows displays to **Extend**, and turn off sleep.
+1. Set Windows displays to **Extend** at **Scale 100%**, and turn off sleep.
 2. Run `kiosk/start-boards.bat`. Close a window with Alt+F4.
 3. To start with Windows, put a shortcut to it in the `shell:startup` folder.
+4. The screens reload themselves nightly at 04:00 to pick up new code.
 
 ## 4. Hosting
 Pushing to `main` deploys `web/` to GitHub Pages (**Settings > Pages > Source: GitHub Actions**).
 Custom domain: set `programs.sweatboxstudio.co.il` in **Settings > Pages**, add
 `CNAME programs -> yakirsh17-byte.github.io` at your DNS provider, then **Enforce HTTPS**.
-Then update the two addresses in the kiosk file.
+Then update `PAGE` in the kiosk file.
 
 ## Tests
 `node --test tests/*.test.js`

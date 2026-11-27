@@ -13,6 +13,7 @@ header h1 { font-size: 46px; letter-spacing: 6px; }
 #dots { display: flex; gap: 8px; }
 #dots i { width: 34px; height: 10px; border-radius: 5px; background: #343845; }
 #dots i.on { background: #fff; }
+#notice { font-size: 18px; font-weight: 400; color: #ffb020; }
 #stale { width: 14px; height: 14px; border-radius: 50%; background: #ffb020; }
 #message { position: absolute; inset: 460px 0 auto; text-align: center; font-size: 44px; color: #9ba0ad; }
 

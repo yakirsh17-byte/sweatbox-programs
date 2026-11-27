@@ -20,6 +20,7 @@ function checkData() {
   }
   const board = buildBoard(readTabs(), date);
   ui.alert([
+    `Script code in this editor: version ${SCRIPT_VERSION}`,
     board.ok ? `OK: cycle ${board.cycle}, week ${board.week}` : 'NOT SHOWN. Fix these:',
     ...(board.errors || []),
     ...board.warnings.map((warning) => 'Warning: ' + warning),

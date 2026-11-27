@@ -31,7 +31,13 @@
       if (date) url.searchParams.set('date', date);
       const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
       const board = await response.json();
-      if (!board.ok || !board.cards) throw new Error((board.errors || ['The Apps Script needs updating']).join(' · '));
+      const outdated = board.version !== EXPECTED_SCRIPT_VERSION;
+      const notice = document.getElementById('notice');
+      notice.textContent = outdated ? `Apps Script v${board.version ?? '?'} · expected v${EXPECTED_SCRIPT_VERSION}` : '';
+      notice.hidden = !outdated;
+      if (!board.ok || !board.cards) {
+        throw new Error(outdated ? 'Apps Script is out of date: deploy a new version' : board.errors.join(' · '));
+      }
       show(board);
       writeCache(board);
       lastSuccess = Date.now();
@@ -39,15 +45,36 @@
       console.warn(error);
       delay = 60 * 1000;
       if (!shown) {
-        document.getElementById('message').textContent = date ? error.message : 'Program coming soon';
+        const technical = date || error.message.startsWith('Apps Script');
+        document.getElementById('message').textContent = technical ? error.message : 'Program coming soon';
       }
     }
     document.getElementById('stale').hidden = !shown || Date.now() - lastSuccess < STALE_MS;
     setTimeout(refresh, delay);
   }
 
+  /* Reload once a night so the screens pick up new code, but only when the site
+     is reachable: reloading while offline would leave Chrome's error page up. */
+  async function tryReload() {
+    try {
+      const response = await fetch(location.href, { cache: 'no-store', signal: AbortSignal.timeout(30000) });
+      if (response.ok) {
+        location.reload();
+        return;
+      }
+    } catch { /* offline: try again later */ }
+    setTimeout(tryReload, 10 * 60 * 1000);
+  }
+  function scheduleReload() {
+    const next = new Date();
+    next.setHours(RELOAD_HOUR, 0, 0, 0);
+    if (next <= new Date()) next.setDate(next.getDate() + 1);
+    setTimeout(tryReload, next - new Date());
+  }
+
   const cached = readCache();
   if (cached) show(cached);
   document.fonts.ready.then(fitCards);
   refresh();
+  scheduleReload();
 })();
