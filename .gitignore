@@ -1,0 +1,6 @@
+# Private: workout content must never be committed to this public repository.
+seed-*.js
+*.xlsx
+*.csv
+private/
+node_modules/
