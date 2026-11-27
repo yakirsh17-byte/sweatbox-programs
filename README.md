@@ -1,31 +1,38 @@
 # SweatBox programs
 
-Studio screens fed by a private Google Sheet. Current stage: sheet setup and connection test.
+Studio screens fed by a private Google Sheet.
 
-## 1. Sheet and API
-1. Create a new Google Sheet. Open **Extensions > Apps Script**.
+- Screen 1: `?screen=1`  ·  Screen 2: `?screen=2`
+- Preview another week: add `&date=2026-11-29`
+
+## 1. Sheet and script (once)
+1. Create a Google Sheet. Open **Extensions > Apps Script**.
 2. In **Project settings**, set the time zone to Jerusalem.
-3. Add two script files and paste in `apps-script/setup.js` and `apps-script/api.js`.
-4. Choose `setupSheet`, press **Run**, and approve the permissions.
-5. Optional: add your private seed file, then run `seedPrograms` once.
+3. Add one script file for each file in `apps-script/` and paste its contents.
+4. Run `setupSheet` and approve the permissions.
+5. **Deploy > New deployment > Web app**. Execute as **Me**, access **Anyone**.
+6. Put the `/exec` URL in `web/config.js`.
+
+After changing the script: **Deploy > Manage deployments > edit > New version**, so the URL stays the same.
 
 ## 2. Entering programs
 - One tab per cycle (`Cycle 1`, `Cycle 2`, ...). Each row has a week (1-4) and a card.
-- For the next cycle, reload the sheet, use **SweatBox > New cycle**, then edit the copy.
+- Next cycle: **SweatBox > New cycle**, then edit the copy.
+- **SweatBox > Check and preview** lists problems for a date and gives preview links.
 - Weeks are counted continuously from `cycle_1_starts` in `Settings`.
 
-## 3. Deploy the API
-- **Deploy > New deployment > Web app**. Execute as **Me**, access **Anyone**. Copy the `/exec` URL.
+## 3. Studio PC (Windows, two 1920x1080 screens)
+1. Set Windows displays to **Extend**, and turn off sleep.
+2. Run `kiosk/start-boards.bat`. Close a window with Alt+F4.
+3. To start with Windows, put a shortcut to it in the `shell:startup` folder.
 
-## 4. Page
-1. Put the URL in `web/config.js`.
-2. In the repository, **Settings > Pages > Source: GitHub Actions**.
-3. Push to `main` (or run the workflow from the **Actions** tab).
-4. Open the Pages address. It should show `CONNECTED`.
+## 4. Hosting
+Pushing to `main` deploys `web/` to GitHub Pages (**Settings > Pages > Source: GitHub Actions**).
+Custom domain: set `programs.sweatboxstudio.co.il` in **Settings > Pages**, add
+`CNAME programs -> yakirsh17-byte.github.io` at your DNS provider, then **Enforce HTTPS**.
+Then update the two addresses in the kiosk file.
 
-## 5. Domain (after the test passes)
-1. In **Settings > Pages**, set the custom domain to `programs.sweatboxstudio.co.il`.
-2. At your DNS provider add `CNAME programs -> yakirsh17-byte.github.io`.
-3. Enable **Enforce HTTPS** when it becomes available.
+## Tests
+`node --test tests/*.test.js`
 
 Do not commit program content or member details: this repository is public.

@@ -1,29 +1,26 @@
 <!doctype html>
-<html lang="en">
+<html lang="he">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SweatBox connection test</title>
-  <style>
-    body { background: #0b0c0f; color: #f4f4f6; font: 20px/1.5 system-ui, sans-serif; padding: 24px; }
-    pre { white-space: pre-wrap; }
-  </style>
+  <title>SweatBox programs</title>
+  <link rel="icon" href="assets/logo-white.png">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800&display=swap">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>SweatBox connection test</h1>
-  <pre id="out">Checking…</pre>
+  <div id="stage">
+    <header>
+      <img src="assets/logo-white.png" alt="">
+      <h1 id="brand">SWEATBOX</h1>
+      <span id="label"></span>
+      <div class="week"><span id="stale" title="Not updated recently" hidden></span><div id="dots"></div><span id="week"></span></div>
+    </header>
+    <main id="board"></main>
+    <p id="message">Loading…</p>
+  </div>
   <script src="config.js"></script>
-  <script>
-    const out = document.getElementById('out');
-    async function check() {
-      if (!API_URL) throw new Error('API_URL is empty. Edit web/config.js.');
-      const response = await fetch(API_URL);
-      if (!response.ok) throw new Error('HTTP ' + response.status);
-      return response.json();
-    }
-    check()
-      .then((data) => { out.textContent = 'CONNECTED\n' + JSON.stringify(data, null, 2); })
-      .catch((error) => { out.textContent = 'FAILED\n' + error.message; });
-  </script>
+  <script src="render.js"></script>
+  <script src="data.js"></script>
 </body>
 </html>

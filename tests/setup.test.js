@@ -30,7 +30,9 @@ function fakeGoogle() {
         return copy;
       },
       getRange: (a, b) => (typeof a === 'string' ? range(1, 1) : range(a, b)),
-      setFrozenRows() {}, getMaxRows: () => 1000, getLastRow: () => cells.length,
+      setFrozenRows() {},
+      getDataRange: () => ({ getDisplayValues: () => cells.map((line) => line.map(String)) }),
+      getMaxRows: () => 1000, getLastRow: () => cells.length,
     };
   };
   const rule = { requireValueInList: () => rule, setAllowInvalid: () => rule, build: () => ({}) };
@@ -54,16 +56,18 @@ function fakeGoogle() {
 
 function load(google) {
   const context = vm.createContext(google);
-  ['setup.js', 'api.js'].forEach((f) =>
+  ['model.js', 'setup.js', 'api.js', 'menu.js'].forEach((f) =>
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../apps-script', f), 'utf8'), context));
   return context;
 }
 
-test('setup creates the tabs and the endpoint reports them', () => {
-  const app = load(fakeGoogle());
+test('setup creates the tabs, and an empty sheet is reported instead of drawn', () => {
+  const google = fakeGoogle();
+  const app = load(google);
   app.setupSheet();
-  const reply = JSON.parse(app.doGet());
-  assert.deepStrictEqual(reply, { ok: true, rows: { Cards: 11, Fixed: 0, 'Cycle 1': 0, Settings: 4 } });
+  assert.deepStrictEqual(Object.keys(google.tabs), ['Cards', 'Fixed', 'Cycle 1', 'Settings']);
+  const reply = JSON.parse(app.doGet({ parameter: { date: '2026-11-22' } }));
+  assert.strictEqual(reply.ok, false);
 });
 
 test('setup refuses to run twice', () => {

@@ -27,10 +27,6 @@ const TABS = {
     ['cycle_1_starts', '2026-11-01']],
 };
 
-function onOpen() {
-  SpreadsheetApp.getUi().createMenu('SweatBox').addItem('New cycle', 'newCycle').addToUi();
-}
-
 /** Highest N among the tabs named "Cycle N". */
 function lastCycleNumber(book) {
   const numbers = book.getSheets()
